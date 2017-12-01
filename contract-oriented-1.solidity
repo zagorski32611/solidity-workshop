@@ -1,0 +1,258 @@
+/* Contract" in this context is actually not an Ethereum contract,
+   or a smart contract; it is the name used for a function or some other
+   unit of functionality.
+
+   // This is an example contract with public and private functions, complie it:
+*/
+pragma solidity ^0.4.4;
+contract HelloVisibility {
+  function hello() constant public returns (string) { //if you add external it doesn' compile!
+    return "hello";
+  }
+
+  function helloLazy() constant public returns (string) {
+    return hello();
+  }
+
+  function helloAgain() constant public returns (string) {
+    return helloQuiet();
+  }
+
+  function helloQuiet() constant private returns (string) {
+    return "hello";
+  }
+ }
+
+// Compile with the interal compiler: solc --optimize --bin contract-oriented-1.solidity
+
+/* solc --optimize --bin contract-oriented-1.solidity
+The hello function can be called from other contracts, and can also be called
+from the contract itself, as demonstrated by the helloLazy function,
+which simply calls to the hello function. The helloQuiet function can be
+called from other functions, as demonstrated by the helloAgain function,
+but it cannot be called from other contracts or through external
+transactions/calls.
+*/
+
+// The next two contracts will illustrate the difference between private and internal:
+
+contract helloGenerator {
+  function hello() constant external returns (string) {
+    return "hello";
+  }
+}
+
+contract hello is helloGenerator {
+  function hello() constant external returns (string) {
+    return helloQuiet();
+  }
+}
+
+/*Hello extends HelloGenerator and uses its internal function to create the
+string. HelloGenerator has an empty JSON ABI, because it has no public
+functions. Try and change internal to private at helloQuiet and you will
+get a compiler error. */
+
+
+/* custom modifiers change the way a function behaves:
+Here are three different ways to create the same funciton:
+*/
+
+contract GuardedFunctionExample1 {
+  uint public data = 1;
+
+  function guardedFunction(uint _data) {
+    if(_data == 0)
+      throw;
+    data = _data;
+  }
+}
+
+contract GuardedFunctionExample2 {
+  uint public data = 1;
+
+  function guardedFunction(uint _data) {
+    check(_data);
+    data = _data;
+  }
+
+  function check(uint _data) private {
+    if (_data == 0)
+      throw;
+  }
+}
+
+contract GuardedFunctionExample3 {
+
+  uint public data = 1;
+
+  modifier checked(uint _data) {
+    if (_data == 0)
+      throw;
+    _
+  }
+
+  function guardedFunction(uint _data) checked(_data) {
+    data = _data;
+  }
+
+}
+
+/*  I want to re-use the guard in different functions, normal decomposition
+would suffice (example 2). If I wanted to inline it, for added efficiency,
+I could just do that as well (example 1).
+*/
+
+
+// COP:
+/*
+COP applied
+
+This section contains a simple application of the techniques described in
+the blog post. The following contract is a variation of the example token
+contract We will start without modifiers.
+*/
+contract Token
+{
+    address public owner;
+
+    // The balance of everyone
+    mapping (address => uint) public balances;
+
+    mapping (address => bool) public blacklisted;
+
+
+    // Constructor - we're a millionaire!
+    function Token() {
+        owner = msg.sender;
+        balances[msg.sender] = 1000000;
+    }
+
+    function blacklist(address _addr) {
+        if(msg.sender != owner)
+            return;
+        blacklisted[_addr] = true;
+    }
+
+    function transfer(uint _amount, address _dest) {
+        if(blacklisted[msg.sender])
+            return;
+        if(balances[msg.sender] >= _amount) {
+            balances[msg.sender] -= _amount;
+            balances[_dest] += _amount;
+        }
+    }
+
+}
+
+
+// Below, I'm going to make the chages to the contract in the tutorial:
+
+
+contract Token
+  {
+    address public owner;
+
+    // The balance of everyone
+    mapping (address => uint) public balances;
+
+    mapping (address => bool) public blacklisted;
+
+
+    // Constructor - we're a millionaire!
+    function Token() {
+        owner = msg.sender;
+        balances[msg.sender] = 1000000;
+    }
+
+    // First, remove the guard and make it a modifier for blacklist:
+    modifier is_owner{
+      if (msg.sender !=owner)
+        return;
+      _
+    }
+    // remove both guards and make modifiers:
+
+    modifier not_blacklisted {
+      if (blacklisted[msg.sender])
+      return;
+      _
+    }
+
+    modifier at_least(uint x) {
+      if (balances[msg.sender] < x)
+      return;
+      _
+    }
+
+    function blacklist(address _addr) is_owner {
+        blacklisted[_addr] = true;
+    }
+
+
+    function transfer(uint _amount, address _dest) not_blacklisted at_least(_amount) {
+      balances[msg.sender] -= _amount;
+      balances[_dest] += _amount;
+    }
+
+  }
+
+
+  // Now it's time for unit tests:::
+
+  contract Token
+  {
+    //the balance of everyone
+    mapping (address => uint) public balances;
+
+    function Token() {
+      balances[msg.sender] = 100000;
+    }
+
+    modifier at_least(uint x) {
+      if (balances[msg.sender] < x)
+        return;
+      _
+    }
+
+    function transfer(uint _amount, address _dest) at_least(_amount) {
+      balances[msg.sender] -= _amount;
+      balances[_dest] += _amount;
+    }
+  }
+
+  contract TokenTest is Token {
+
+    address constant EMPTY_ACCOUNT = 0xDEADBEA7;
+
+    function atLeastTester(uint _amount) at_least(_amount) constant private returns (bool) {
+        return true;
+    }
+
+    function testAtLeastSuccess() returns (bool) {
+        balances[msg.sender] = 1000;
+        return atLeastTester(1000);
+    }
+
+    function testAtLeastFailBalanceTooLow() returns (bool) {
+        balances[msg.sender] = 999;
+        return !atLeastTester(1000);
+    }
+
+    // Test transferring to account with no money, then check their balance.
+    function testTransfer() returns (bool) {
+        balances[msg.sender] = 500;
+        balances[EMPTY_ACCOUNT] = 0;
+        transfer(500, EMPTY_ACCOUNT);
+        return balances[msg.sender] == 0 && balances[EMPTY_ACCOUNT] == 500;
+    }
+
+    // Test transferring to account with no money, then check their balance.
+    function testTransferFailBalanceTooLow() returns (bool) {
+        balances[msg.sender] = 500;
+        balances[EMPTY_ACCOUNT] = 0;
+        transfer(600, EMPTY_ACCOUNT);
+        return balances[msg.sender] == 500 && balances[EMPTY_ACCOUNT] == 0;
+    }
+
+}
