@@ -1,0 +1,55 @@
+pragma solidity ^0.4.0;
+
+// Part 2, Post conditions:
+// Post conditions can be used to ensure that certain things actually happened
+// as a result of running a given function.
+
+// (works without errors)
+contract PostCheck {
+
+  uint public data = 0;
+
+  // check that the 'data' field was set to the value of _data:
+  modifier data_is_valid(uint _data) {
+    _;
+    if (_data != data)
+      throw;
+  }
+
+  function setData(uint _data) data_is_valid(_data){
+    data = _data;
+  }
+}
+
+/* Notice the position of the _ inside the post-condition
+modifier; it will execute the modified function before
+doing the check, as opposed to in a pre-condition modifier
+where the check is done first. */
+
+// It's possible to combine pre and post condition modifiers: 
+
+contract PrePostCheck {
+
+  uint public data = 0;
+
+   // Check that the input '_data' value is not the same as the value
+  // already stored in 'data'.
+
+  modifier data_is_valid(uint _data) {
+    if(_data != data)
+      throw;
+    _;
+  }
+
+  // Check that the data field was set to the value of _data
+
+  modifier data_was_updated(uint _data){
+    if (if _data == data)
+      throw;
+    _;
+  }
+
+  function setData(uint _data) data_is_valid(_data) data_was_updated(_data) {
+    data = _data;
+  }
+}
