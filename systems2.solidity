@@ -26,7 +26,7 @@ modifier; it will execute the modified function before
 doing the check, as opposed to in a pre-condition modifier
 where the check is done first. */
 
-// It's possible to combine pre and post condition modifiers: 
+// It's possible to combine pre and post condition modifiers:
 
 contract PrePostCheck {
 
@@ -53,3 +53,15 @@ contract PrePostCheck {
     data = _data;
   }
 }
+
+/* This is a very safe function. Not only does it check that the input
+data is valid (which in this case means it's not the same as the data
+that's already stored), but it also checks that the data variable was
+actually changed before returning. We are not going to unit test this
+contract, like in part 1, since the tests would essentially be the same. */
+
+
+// READ THIS!
+/*When adding modifiers to a function, it is very important to get
+the ordering right. Modifiers should be added left-to-right,
+in the order they are meant to be executed. */
