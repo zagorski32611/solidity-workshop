@@ -10,10 +10,10 @@ contract PostCheck {
   uint public data = 0;
 
   // check that the 'data' field was set to the value of _data:
-  modifier data_is_valid(uint _data) {
+  modifier data_is_valid(uint _data) { //should this be public?
     _;
     if (_data != data)
-      throw;
+      revert();
   }
 
   function setData(uint _data) data_is_valid(_data){
@@ -37,19 +37,20 @@ contract PrePostCheck {
 
   modifier data_is_valid(uint _data) {
     if(_data != data)
-      throw;
+      throw; // revert()?
     _;
   }
 
   // Check that the data field was set to the value of _data
 
   modifier data_was_updated(uint _data){
-    if (if _data == data)
+    if (_data == data){
       throw;
+    }
     _;
   }
 
-  function setData(uint _data) data_is_valid(_data) data_was_updated(_data) {
+  function setData(uint _data) data_is_valid(_data) data_was_updated(_data) { // visibility?
     data = _data;
   }
 }
@@ -95,7 +96,7 @@ contract Token {
     if(blacklisted[msg.sender])
         return;
     if(!blacklisted[_dest] && balances[msg.sender] >= _amount) {
-        balances[msg.sender] -= amount;
+        balances[msg.sender] -= _amount;
         balances[_dest] += _amount;
     }
     else {
@@ -117,17 +118,22 @@ contract Token {
   mapping (address => bool) public blacklisted;
 
   // Constructor
-  function Token() {
+  function Token() { // visibility again
     balances[msg.sender] = 10000;
   }
 
   // msg.sender cannot be blacklisted
   modifier not_blacklisted {
     if (blacklisted[msg.sender])
-      throw;
+      throw; // revert()
     _;
   }
 
+  modifier at_least(uint x) {
+    if(balances[msg.sender] < x)
+        revert();
+    _;
+  }
 
   // Transfer funds.
   // If the caller is blacklisted or does not have enough funds,
@@ -168,14 +174,14 @@ contract Token {
   // msg.sender cannot be blacklisted
   modifier not_blacklisted {
       if (blacklisted[msg.sender])
-          throw;
+          throw; //revert()
       _;
   }
 
   // msg.sender must have a balance of at least 'x' tokens.
   modifier at_least(uint x) {
       if (balances[msg.sender] < x)
-          throw;
+          throw; // revert()
       _;
   }
 
