@@ -84,7 +84,7 @@ contract Token {
   function Token() {
     balances[msg.sender] = 10000;
   }
-  
+
   // Transfer funds.
   // If the caller is blacklisted, this will fail.
   // If the receiver is not blacklisted and the caller has the funds,
@@ -103,4 +103,105 @@ contract Token {
       blacklisted[msg.sender] = true;
     }
   }
+}
+
+
+// Now, instead of making it empty someone's account because they don't have
+// the coin, let's change the balance check to a pre-condition:
+
+contract Token {
+  // The balance of everyone
+  mapping (address => uint) public balances;
+
+  // Blacklisted accounts
+  mapping (address => bool) public blacklisted;
+
+  // Constructor
+  function Token() {
+    balances[msg.sender] = 10000;
+  }
+
+  // msg.sender cannot be blacklisted
+  modifier not_blacklisted {
+    if (blacklisted[msg.sender])
+      throw;
+    _;
+  }
+
+
+  // Transfer funds.
+  // If the caller is blacklisted or does not have enough funds,
+  // the transfer will fail.
+  // If the receiver is not blacklisted, the funds are transferred
+  // to the receiver, otherwise the caller is blacklisted and their
+  // account emptied.
+
+  function transfer(uint _amount, address _dest) not_blacklisted at_least(_amount) {
+    if (!blacklisted[_dest]) {
+      balances[msg.sender] -= _amount;
+      balances[_dest] += _amount;
+    }
+    else {
+      balances[msg.sender] = 0;
+      blacklisted[msg.sender] = true;
+    }
+  }
+
+}
+
+  // We can further make changes:
+
+contract Token {
+
+  // The balance of everyone
+  mapping (address => uint) public balances;
+
+  // Blacklisted accounts
+  mapping (address => bool) public blacklisted;
+
+
+  // Constructor - we're a millionaire!
+  function Token() {
+      balances[msg.sender] = 1000000;
+  }
+
+  // msg.sender cannot be blacklisted
+  modifier not_blacklisted {
+      if (blacklisted[msg.sender])
+          throw;
+      _;
+  }
+
+  // msg.sender must have a balance of at least 'x' tokens.
+  modifier at_least(uint x) {
+      if (balances[msg.sender] < x)
+          throw;
+      _;
+  }
+
+  // Transfer funds. This fails if the caller does not have enough funds.
+  function __transfer(uint _amount, address _dest) private at_least(_amount) {
+      balances[msg.sender] -= _amount;
+      balances[_dest] += _amount;
+  }
+
+  // Blacklist an account.
+  function __blacklist() private {
+      balances[msg.sender] = 0;
+      blacklisted[msg.sender] = true;
+  }
+
+  // Transfer funds.
+  // If the caller is blacklisted or does not have enough funds,
+  // the transfer will fail.
+  // If the receiver is not blacklisted, the funds are transferred
+  // to the receiver, otherwise the caller is blacklisted and their
+  // account emptied.
+  function transfer(uint _amount, address _dest) not_blacklisted {
+      if(!blacklisted[_dest])
+          __transfer(_amount, _dest);
+      else
+          __blacklist();
+  }
+
 }
