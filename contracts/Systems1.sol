@@ -15,7 +15,7 @@ contract Data {
     The acocunt number on line 8 cannot be changed. Ever. If we want to make
     the contract more flexible, we can make it like this:
 
-    */
+
 
 
     contract SetOwner {
@@ -34,12 +34,12 @@ contract Data {
       }
 
     }
+    */
 
+// now we are going to make it so we can update the entire validation process.
+// The example is a bank deposit. When a deposit is made to an account, the bank
+// calls the authenticaiton contract, if it returns true, it finalizes the deposit.
 
-/* now we are going to make it so we can update the entire validation process.
-The example is a bank deposit. When a deposit is made to an account, the bank
-calls the authenticaiton contract, if it returns true, it finalizes the deposit.
-*/
 
 contract AccountValidator {
 
@@ -59,10 +59,10 @@ contract AccountValidator {
 contract DataExternalValidation {
   uint public data;
 
-  AccountValidator _validator;
+  AccountValidator  _validator;
 
   function addData(uint data_) {
-    DataExternalValidation(address validator) {
+    DataExternalValidation(address); {
       _validator = AccountValidator(validator);
     }
   }
@@ -72,8 +72,8 @@ contract DataExternalValidation {
       _validator = AccountValidator(validator);
   }
 }
-
-/* This is very nice, because it is now possible to replace the contract
+/*
+ This is very nice, because it is now possible to replace the contract
 where the owner check is. Also, since the AccountValidator is its own
 contract we could potentially use that instance to do authentication
 for more contracts then just one.
@@ -82,7 +82,7 @@ One thing remains though. We still can't replace the code!
 All we have done is move the validation code out of the contract.
 The code of the AccountValidator contract can't be changed anymore
 then that of the data contract. Fortunately, Solidity provides a very
-simple and powerful solution - abstract functions. */
+simple and powerful solution - abstract functions.
 
 // Using abstract functions: We could change the validator contract to:
 
@@ -103,3 +103,4 @@ contract SingleAccountValidator is AccountValidator {
       owner = owner_;
   }
 }
+*/

@@ -65,3 +65,42 @@ contract, like in part 1, since the tests would essentially be the same. */
 /*When adding modifiers to a function, it is very important to get
 the ordering right. Modifiers should be added left-to-right,
 in the order they are meant to be executed. */
+
+
+// Here's a more complicated contract:
+// It can be hard to determine if a function's logic should be separated into a
+// modifier or kept in a funciton. Here's an example:
+
+
+contract Token {
+  // The balance of everyone
+  mapping (address => uint) public balances;
+
+  // Blacklisted accounts
+  mapping (address => bool) public blacklisted;
+
+  // Constructor
+
+  function Token() {
+    balances[msg.sender] = 10000;
+  }
+  
+  // Transfer funds.
+  // If the caller is blacklisted, this will fail.
+  // If the receiver is not blacklisted and the caller has the funds,
+  // they will be transferred to the receiver, otherwise the caller is blacklisted
+  // and their account is emptied.
+
+  function transfer(uint _amount, address _dest) {
+    if(blacklisted[msg.sender])
+        return;
+    if(!blacklisted[_dest] && balances[msg.sender] >= _amount) {
+        balances[msg.sender] -= amount;
+        balances[_dest] += _amount;
+    }
+    else {
+      balances[msg.sender] = 0;
+      blacklisted[msg.sender] = true;
+    }
+  }
+}
